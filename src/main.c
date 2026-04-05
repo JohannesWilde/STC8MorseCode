@@ -39,6 +39,38 @@ static uint8_t colorBrightness;
 static uint8_t colorDelta = BRIGHTNESS_DELTA_STEP;
 
 
+typedef struct
+{
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+}
+Color;
+
+typedef struct
+{
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t white;
+}
+ExtendedColor;
+
+
+__code ExtendedColor const violet = {
+    .red = 189,
+    .green = 0,
+    .blue = 206,
+    .white = 0
+};
+
+__code ExtendedColor const yellow = {
+    .red = 255,
+    .green = 200,
+    .blue = 0,
+    .white = 0
+};
+
 void main()
 {
     LED_PIN = 0;
@@ -72,28 +104,8 @@ void main()
 
     interrupts(); // enable interrupts
 
-
-    neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = 0xff;
-
     while (true)
     {
-        if (BRIGHTNESS_DELTA_STEP > colorBrightness)
-        {
-            colorDelta = BRIGHTNESS_DELTA_STEP;
-        }
-        else if ((255 - BRIGHTNESS_DELTA_STEP) < colorBrightness)
-        {
-            colorDelta = (uint8_t)(-BRIGHTNESS_DELTA_STEP);
-        }
-        else
-        {
-            // intentionally empty
-        }
-
-        colorBrightness = colorBrightness + colorDelta;
-
-        show(neoPixelData, /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL, /*brightness*/ colorBrightness);
-
         if (updatePrescaler(&preScalerOne, PRE_SCALER_ONE_INIT))
         {
             // Somewhat slower.
@@ -103,12 +115,39 @@ void main()
                 "; Toggle the LED at P1.2.\n"
                 "CPL _P1_2"
             );
-
         }
         else
         {
             // intentionally empty
         }
+
+
+        if (BRIGHTNESS_DELTA_STEP > colorBrightness)
+        {
+            colorDelta = BRIGHTNESS_DELTA_STEP;
+
+            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = violet.red;
+            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = violet.green;
+            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = violet.blue;
+            // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = violet.white;
+        }
+        else if ((255 - BRIGHTNESS_DELTA_STEP) < colorBrightness)
+        {
+            colorDelta = (uint8_t)(-BRIGHTNESS_DELTA_STEP);
+
+            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
+            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
+            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
+            // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+        }
+        else
+        {
+            // intentionally empty
+        }
+
+        colorBrightness = colorBrightness + colorDelta;
+
+        show(neoPixelData, /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL, /*brightness*/ colorBrightness);
 
         PCON |= 0x02;  // PCON.PD = 1 - Enter power-down mode
         SFRX_ON();
