@@ -125,7 +125,7 @@ __code MorseCodeSymbol const morseCodeSymbols[] = {
 };
 
 __code const MorseCodeSymbolIndex text[] = {
-    morseCodeSymbolIndex_5, morseCodeSymbolIndex_5, /*morseCodeSymbolIndex_1, morseCodeSymbolIndex_2, morseCodeSymbolIndex_3, */morseCodeSymbolIndex_space,
+    morseCodeSymbolIndex_5, /*morseCodeSymbolIndex_1, morseCodeSymbolIndex_2, morseCodeSymbolIndex_3, */morseCodeSymbolIndex_space,morseCodeSymbolIndex_space,
 };
 
 
@@ -139,6 +139,87 @@ typedef struct
 MorseCodeSenderState;
 
 static MorseCodeSenderState morseCodeSenderState;
+
+
+bool updateMorseCodeSenderState()
+{
+    bool const previousSignalAndNotPulse = morseCodeSenderState.showingSignalAndNotPause;
+
+    // Note another cycle passed.
+    --morseCodeSenderState.durationTillNextSignal;
+    if (0 == morseCodeSenderState.durationTillNextSignal)
+    {
+        // Signal duration over - check for next signal.
+        bool const lastSymbolFinished = (0 == morseCodeSenderState.currentSymbolWorkingCopy.length);
+
+        // Load next symbol if so required.
+        if (lastSymbolFinished)
+        {
+            // Load next symbol to show after this pause.
+            ++morseCodeSenderState.currentSymbol;
+            if ((text + NELEMS(text)) ==  morseCodeSenderState.currentSymbol)
+            {
+                // Loop back to front of text.
+                morseCodeSenderState.currentSymbol = &text[0];
+            }
+            else
+            {
+                // intentionally empty
+            }
+
+            MorseCodeSymbolIndex const nextSymbolIndex = *morseCodeSenderState.currentSymbol;
+
+            morseCodeSenderState.currentSymbolWorkingCopy.content = morseCodeSymbols[nextSymbolIndex].content;
+            morseCodeSenderState.currentSymbolWorkingCopy.length = morseCodeSymbols[nextSymbolIndex].length;
+        }
+        else
+        {
+            // intentionally empty
+        }
+
+        // Determine next signal.
+        if (morseCodeSymbolIndex_space == *morseCodeSenderState.currentSymbol)
+        {
+            // End of word.
+            morseCodeSenderState.durationTillNextSignal = 7;
+            morseCodeSenderState.showingSignalAndNotPause = false;
+        }
+        else if (morseCodeSenderState.showingSignalAndNotPause)
+        {
+            // Previously content, so determine length of pause.
+            if (lastSymbolFinished)
+            {
+                // End of symbol.
+                morseCodeSenderState.durationTillNextSignal = 3;
+            }
+            else
+            {
+                // Inside symbol.
+                morseCodeSenderState.durationTillNextSignal = 1;
+            }
+            morseCodeSenderState.showingSignalAndNotPause = false;
+        }
+        else // if (!morseCodeSenderState.showingSignalAndNotPause)
+        {
+            // Previously pause, so look for next content.
+#ifndef NDEBUG
+            // Next symbol must be loaded before a pause above [as to correctly handle morseCodeSymbolIndex_space].
+            while (0 == morseCodeSenderState.currentSymbolWorkingCopy.length);
+#endif // NDEBUG
+
+            // Use MSb of currentSymbolWorkingCopy next.
+            MorseCodeSignal const nextSignal = (morseCodeSenderState.currentSymbolWorkingCopy.content & 0x80);
+            // Advance symbol content.
+            morseCodeSenderState.currentSymbolWorkingCopy.content <<= 1;
+            morseCodeSenderState.currentSymbolWorkingCopy.length -= 1;
+            // Apply nextSignal.
+            morseCodeSenderState.durationTillNextSignal = morseCodeSignalToDuration(nextSignal);
+            morseCodeSenderState.showingSignalAndNotPause = true;
+        }
+    }
+
+    return (previousSignalAndNotPulse != morseCodeSenderState.showingSignalAndNotPause);
+}
 
 
 void main()
@@ -188,81 +269,8 @@ void main()
 
     while (true)
     {
-        // Note another cycle passed.
-        --morseCodeSenderState.durationTillNextSignal;
-        if (0 == morseCodeSenderState.durationTillNextSignal)
+        if (updateMorseCodeSenderState())
         {
-            // Signal duration over - check for next signal.
-            bool const lastSymbolFinished = (0 == morseCodeSenderState.currentSymbolWorkingCopy.length);
-
-            // Load next symbol if so required.
-            if (lastSymbolFinished)
-            {
-                // Load next symbol to show after this pause.
-                ++morseCodeSenderState.currentSymbol;
-                if ((text + NELEMS(text)) ==  morseCodeSenderState.currentSymbol)
-                {
-                    // Loop back to front of text.
-                    morseCodeSenderState.currentSymbol = &text[0];
-                }
-                else
-                {
-                    // intentionally empty
-                }
-
-                MorseCodeSymbolIndex const nextSymbolIndex = *morseCodeSenderState.currentSymbol;
-
-                morseCodeSenderState.currentSymbolWorkingCopy.content = morseCodeSymbols[nextSymbolIndex].content;
-                morseCodeSenderState.currentSymbolWorkingCopy.length = morseCodeSymbols[nextSymbolIndex].length;
-            }
-            else
-            {
-                // intentionally empty
-            }
-
-            // Determine next signal.
-            if (morseCodeSymbolIndex_space == *morseCodeSenderState.currentSymbol)
-            {
-                // End of word.
-                morseCodeSenderState.durationTillNextSignal = 7;
-                morseCodeSenderState.showingSignalAndNotPause = false;
-            }
-            else if (morseCodeSenderState.showingSignalAndNotPause)
-            {
-                // Previously content, so determine length of pause.
-                if (lastSymbolFinished)
-                {
-                    // End of symbol.
-                    morseCodeSenderState.durationTillNextSignal = 3;
-                }
-                else
-                {
-                    // Inside symbol.
-                    morseCodeSenderState.durationTillNextSignal = 1;
-                }
-                morseCodeSenderState.showingSignalAndNotPause = false;
-            }
-            else // if (!morseCodeSenderState.showingSignalAndNotPause)
-            {
-                // Previously pause, so look for next content.
-#ifndef NDEBUG
-                // Next symbol must be loaded before a pause above [as to correctly handle morseCodeSymbolIndex_space].
-                while (0 == morseCodeSenderState.currentSymbolWorkingCopy.length);
-#endif // NDEBUG
-
-                // Use MSb of currentSymbolWorkingCopy next.
-                MorseCodeSignal const nextSignal = (morseCodeSenderState.currentSymbolWorkingCopy.content & 0x80);
-                // Advance symbol content.
-                morseCodeSenderState.currentSymbolWorkingCopy.content <<= 1;
-                morseCodeSenderState.currentSymbolWorkingCopy.length -= 1;
-                // Apply nextSignal.
-                morseCodeSenderState.durationTillNextSignal = morseCodeSignalToDuration(nextSignal);
-                morseCodeSenderState.showingSignalAndNotPause = true;
-            }
-
-
-
-
             LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
 
             show(neoPixelData,
@@ -273,6 +281,7 @@ void main()
         {
             // intentionally empty
         }
+
 
 
         // if (BRIGHTNESS_DELTA_STEP > colorBrightness)
