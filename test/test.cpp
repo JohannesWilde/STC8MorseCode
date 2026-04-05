@@ -55,6 +55,7 @@ int main()
         /*morseCodeSymbolIndex_space*/ PAUSE_7,
         /*morseCodeSymbolIndex_space*/ PAUSE_7,
         /*morseCodeSymbolIndex_2*/ DIT, PAUSE_1, DIT, PAUSE_1, DAH, PAUSE_1, DAH, PAUSE_1, DAH,
+                                   PAUSE_3,
         /*morseCodeSymbolIndex_3*/ DIT, PAUSE_1, DIT, PAUSE_1, DIT, PAUSE_1, DAH, PAUSE_1, DAH,
     };
     std::vector<bool> observations;
@@ -66,14 +67,7 @@ int main()
 
     for (size_t index = 0; expectations.size() > index; ++index)
     {
-        if (morseCodeSenderStateUpdate())
-        {
-            // intentionally empty
-        }
-        else
-        {
-            // intentionally empty
-        }
+        morseCodeSenderStateUpdate();
 
         observations.push_back(morseCodeSenderState.showingSignalAndNotPause);
     }

@@ -98,7 +98,8 @@ bool morseCodeSenderStateUpdate(void)
 #endif // NDEBUG
 
             // Use MSb of currentSymbolWorkingCopy next.
-            MorseCodeSignal const nextSignal = (MorseCodeSignal)(morseCodeSenderState.currentSymbolWorkingCopy.content & 0x80);
+            MorseCodeSignal const nextSignal =
+                    (0 == (morseCodeSenderState.currentSymbolWorkingCopy.content & 0x80)) ? morseCodeSignal_dit: morseCodeSignal_dah;
             // Advance symbol content.
             morseCodeSenderState.currentSymbolWorkingCopy.content <<= 1;
             morseCodeSenderState.currentSymbolWorkingCopy.length -= 1;
