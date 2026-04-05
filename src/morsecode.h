@@ -12,7 +12,7 @@ typedef enum
 }
 MorseCodeSignal;
 
-inline uint8_t morseCodeSignalToDuration(MorseCodeSignal const signal)
+static inline uint8_t morseCodeSignalToDuration(MorseCodeSignal const signal)
 {
     switch (signal)
     {
