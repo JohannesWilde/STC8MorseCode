@@ -71,7 +71,7 @@ __code ExtendedColor const yellow = {
 
 
 __code const MorseCodeSymbolIndex morseCodeText[] = {
-    morseCodeSymbolIndex_1, morseCodeSymbolIndex_2, morseCodeSymbolIndex_3, morseCodeSymbolIndex_4, morseCodeSymbolIndex_5, morseCodeSymbolIndex_space,
+    #include "morsecodetext.c"
 };
 MorseCodeSenderState morseCodeSenderState;
 
