@@ -8,7 +8,11 @@
 
 #include <limits.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+
+
+#define NELEMS(x)  (sizeof(x) / sizeof((x)[0]))
 
 
 #define LED_PIN MAKE_PIN_NAME(LED_PORT_NUMBER, LED_PIN_NUMBER)
@@ -71,6 +75,79 @@ __code ExtendedColor const yellow = {
     .white = 0
 };
 
+
+typedef enum
+{
+    morseCodeSignal_dit,
+    morseCodeSignal_dah
+}
+MorseCodeSignal;
+
+inline uint8_t morseCodeSignalToDuration(MorseCodeSignal const signal)
+{
+    switch (signal)
+    {
+    case morseCodeSignal_dit: return 1;
+    case morseCodeSignal_dah: return 3;
+    }
+    return 0xff;
+}
+
+typedef struct
+{
+    uint8_t content;
+    uint8_t length;     // in bits
+}
+MorseCodeSymbol;
+
+typedef enum
+{
+    morseCodeSymbolIndex_0,
+    morseCodeSymbolIndex_1,
+    morseCodeSymbolIndex_2,
+    morseCodeSymbolIndex_3,
+    morseCodeSymbolIndex_4,
+    morseCodeSymbolIndex_5,
+    morseCodeSymbolIndex_6,
+    morseCodeSymbolIndex_7,
+    morseCodeSymbolIndex_8,
+    morseCodeSymbolIndex_9,
+    morseCodeSymbolIndex_space,
+}
+MorseCodeSymbolIndex;
+
+// MSb transmitted first, each bit as per MorseCodeSignal.
+__code MorseCodeSymbol const morseCodeSymbols[] = {
+    /* 0 */     {.content = 0b11111000, .length = 5},
+    /* 1 */     {.content = 0b01111000, .length = 5},
+    /* 2 */     {.content = 0b00111000, .length = 5},
+    /* 3 */     {.content = 0b00011000, .length = 5},
+    /* 4 */     {.content = 0b00001000, .length = 5},
+    /* 5 */     {.content = 0b00000000, .length = 5},
+    /* 6 */     {.content = 0b10000000, .length = 5},
+    /* 7 */     {.content = 0b11000000, .length = 5},
+    /* 8 */     {.content = 0b11100000, .length = 5},
+    /* 9 */     {.content = 0b11110000, .length = 5},
+    /* space */ {.content = 0b00000000, .length = 0},
+};
+
+__code const MorseCodeSymbolIndex text[] = {
+    morseCodeSymbolIndex_0, morseCodeSymbolIndex_1, morseCodeSymbolIndex_2, morseCodeSymbolIndex_3,
+};
+
+
+typedef struct
+{
+    MorseCodeSymbolIndex const * currentSymbol;
+    MorseCodeSymbol currentSymbolWorkingCopy;
+    uint8_t durationTillNextSignal;
+    bool showingSignalAndNotPause;
+}
+MorseCodeSenderState;
+
+static MorseCodeSenderState morseCodeSenderState;
+
+
 void main()
 {
     LED_PIN = 0;
@@ -104,6 +181,18 @@ void main()
 
     interrupts(); // enable interrupts
 
+    COMPILE_TIME_ASSERT(1 < NELEMS(text));
+    morseCodeSenderState.currentSymbol = &text[0];
+    morseCodeSenderState.currentSymbolWorkingCopy.content = morseCodeSymbols[*morseCodeSenderState.currentSymbol].content;
+    morseCodeSenderState.currentSymbolWorkingCopy.length = morseCodeSymbols[*morseCodeSenderState.currentSymbol].length;
+    morseCodeSenderState.durationTillNextSignal = 1; // allow pre-decrement
+    // morseCodeSenderState.showingSignalAndNotPause = false;
+
+    neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
+    neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
+    neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
+    // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+
     while (true)
     {
         if (updatePrescaler(&preScalerOne, PRE_SCALER_ONE_INIT))
@@ -121,33 +210,108 @@ void main()
             // intentionally empty
         }
 
-
-        if (BRIGHTNESS_DELTA_STEP > colorBrightness)
+        // Note another cycle passed.
+        --morseCodeSenderState.durationTillNextSignal;
+        if (0 == morseCodeSenderState.durationTillNextSignal)
         {
-            colorDelta = BRIGHTNESS_DELTA_STEP;
+            // Signal duration over - check for next signal.
 
-            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = violet.red;
-            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = violet.green;
-            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = violet.blue;
-            // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = violet.white;
-        }
-        else if ((255 - BRIGHTNESS_DELTA_STEP) < colorBrightness)
-        {
-            colorDelta = (uint8_t)(-BRIGHTNESS_DELTA_STEP);
+            // Load next symbol if so required.
+            if (0 == morseCodeSenderState.currentSymbolWorkingCopy.length)
+            {
+                // Load next symbol to show after this pause.
+                ++morseCodeSenderState.currentSymbol;
+                if ((text + NELEMS(text)) ==  morseCodeSenderState.currentSymbol)
+                {
+                    // Loop back to front of text.
+                    morseCodeSenderState.currentSymbol = &text[0];
+                }
+                else
+                {
+                    // intentionally empty
+                }
 
-            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
-            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
-            neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
-            // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+                MorseCodeSymbolIndex const nextSymbolIndex = *morseCodeSenderState.currentSymbol;
+
+                morseCodeSenderState.currentSymbolWorkingCopy.content = morseCodeSymbols[nextSymbolIndex].content;
+                morseCodeSenderState.currentSymbolWorkingCopy.length = morseCodeSymbols[nextSymbolIndex].length;
+            }
+            else
+            {
+                // intentionally empty
+            }
+
+            // Determine next signal.
+            if (morseCodeSymbolIndex_space == *morseCodeSenderState.currentSymbol)
+            {
+                // End of word.
+                morseCodeSenderState.durationTillNextSignal = 7;
+                morseCodeSenderState.showingSignalAndNotPause = false;
+            }
+            else if (morseCodeSenderState.showingSignalAndNotPause)
+            {
+                // Previously content, so determine length of pause.
+                if (0 == morseCodeSenderState.currentSymbolWorkingCopy.length)
+                {
+                    // End of symbol.
+                    morseCodeSenderState.durationTillNextSignal = 3;
+                }
+                else
+                {
+                    // Inside symbol.
+                    morseCodeSenderState.durationTillNextSignal = 1;
+                }
+                morseCodeSenderState.showingSignalAndNotPause = false;
+            }
+            else // if (!morseCodeSenderState.showingSignalAndNotPause)
+            {
+                // Previously pause, so look for next content.
+#ifndef NDEBUG
+                // Next symbol must be loaded before a pause above [as to correctly handle morseCodeSymbolIndex_space].
+                while (0 == morseCodeSenderState.currentSymbolWorkingCopy.length);
+#endif // NDEBUG
+
+                // Use MSb of currentSymbolWorkingCopy next.
+                MorseCodeSignal const nextSignal = (morseCodeSenderState.currentSymbolWorkingCopy.content & 0x80);
+                // Advance symbol content.
+                morseCodeSenderState.currentSymbolWorkingCopy.content <<= 1;
+                morseCodeSenderState.currentSymbolWorkingCopy.length -= 1;
+                // Apply nextSignal.
+                morseCodeSenderState.durationTillNextSignal = morseCodeSignalToDuration(nextSignal);
+                morseCodeSenderState.showingSignalAndNotPause = true;
+            }
         }
         else
         {
             // intentionally empty
         }
 
-        colorBrightness = colorBrightness + colorDelta;
 
-        show(neoPixelData, /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL, /*brightness*/ colorBrightness);
+
+        // if (BRIGHTNESS_DELTA_STEP > colorBrightness)
+        // {
+        //     colorDelta = BRIGHTNESS_DELTA_STEP;
+
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = violet.red;
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = violet.green;
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = violet.blue;
+        //     // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = violet.white;
+        // }
+        // else if ((255 - BRIGHTNESS_DELTA_STEP) < colorBrightness)
+        // {
+        //     colorDelta = (uint8_t)(-BRIGHTNESS_DELTA_STEP);
+
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
+        //     // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+        // }
+        // else
+        // {
+        //     // intentionally empty
+        // }
+
+        show(neoPixelData, /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL, /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 255 : 0);
 
         PCON |= 0x02;  // PCON.PD = 1 - Enter power-down mode
         SFRX_ON();
