@@ -125,7 +125,7 @@ __code MorseCodeSymbol const morseCodeSymbols[] = {
 };
 
 __code const MorseCodeSymbolIndex text[] = {
-    morseCodeSymbolIndex_0, morseCodeSymbolIndex_1, morseCodeSymbolIndex_2, morseCodeSymbolIndex_3,
+    morseCodeSymbolIndex_5, morseCodeSymbolIndex_5, /*morseCodeSymbolIndex_1, morseCodeSymbolIndex_2, morseCodeSymbolIndex_3, */morseCodeSymbolIndex_space,
 };
 
 
@@ -193,9 +193,10 @@ void main()
         if (0 == morseCodeSenderState.durationTillNextSignal)
         {
             // Signal duration over - check for next signal.
+            bool const lastSymbolFinished = (0 == morseCodeSenderState.currentSymbolWorkingCopy.length);
 
             // Load next symbol if so required.
-            if (0 == morseCodeSenderState.currentSymbolWorkingCopy.length)
+            if (lastSymbolFinished)
             {
                 // Load next symbol to show after this pause.
                 ++morseCodeSenderState.currentSymbol;
@@ -229,7 +230,7 @@ void main()
             else if (morseCodeSenderState.showingSignalAndNotPause)
             {
                 // Previously content, so determine length of pause.
-                if (0 == morseCodeSenderState.currentSymbolWorkingCopy.length)
+                if (lastSymbolFinished)
                 {
                     // End of symbol.
                     morseCodeSenderState.durationTillNextSignal = 3;
