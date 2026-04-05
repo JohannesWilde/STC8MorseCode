@@ -17,6 +17,7 @@ MorseCodeSenderState morseCodeSenderState;
 #include "morsecode.c"
 
 
+
 int main()
 {
     morseCodeSenderStateInit();
