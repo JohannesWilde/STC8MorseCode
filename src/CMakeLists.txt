@@ -6,8 +6,13 @@ add_library(WS2812
 
 add_executable(${PROJECT_NAME}
     8051_helpers.h
+    configuration.h
     main.c
+    pinout.h
+    specifics.h
+    static_assert.h
     stc8g.h
+    unused.h
 )
 
 target_link_libraries(${PROJECT_NAME}
