@@ -1,5 +1,7 @@
 #include "8051_helpers.h"
 #include "configuration.h"
+#include "morsecode.h"
+#include "nelems.h"
 #include "pinout.h"
 #include "prescaler.h"
 #include "static_assert.h"
@@ -10,9 +12,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-
-#define NELEMS(x)  (sizeof(x) / sizeof((x)[0]))
 
 
 #define LED_PIN MAKE_PIN_NAME(LED_PORT_NUMBER, LED_PIN_NUMBER)
@@ -69,157 +68,14 @@ __code ExtendedColor const yellow = {
 };
 
 
-typedef enum
-{
-    morseCodeSignal_dit,
-    morseCodeSignal_dah
-}
-MorseCodeSignal;
 
-inline uint8_t morseCodeSignalToDuration(MorseCodeSignal const signal)
-{
-    switch (signal)
-    {
-    case morseCodeSignal_dit: return 1;
-    case morseCodeSignal_dah: return 3;
-    }
-    return 0xff;
-}
 
-typedef struct
-{
-    uint8_t content;
-    uint8_t length;     // in bits
-}
-MorseCodeSymbol;
-
-typedef enum
-{
-    morseCodeSymbolIndex_0,
-    morseCodeSymbolIndex_1,
-    morseCodeSymbolIndex_2,
-    morseCodeSymbolIndex_3,
-    morseCodeSymbolIndex_4,
-    morseCodeSymbolIndex_5,
-    morseCodeSymbolIndex_6,
-    morseCodeSymbolIndex_7,
-    morseCodeSymbolIndex_8,
-    morseCodeSymbolIndex_9,
-    morseCodeSymbolIndex_space,
-}
-MorseCodeSymbolIndex;
-
-// MSb transmitted first, each bit as per MorseCodeSignal.
-__code MorseCodeSymbol const morseCodeSymbols[] = {
-    /* 0 */     {.content = 0b11111000, .length = 5},
-    /* 1 */     {.content = 0b01111000, .length = 5},
-    /* 2 */     {.content = 0b00111000, .length = 5},
-    /* 3 */     {.content = 0b00011000, .length = 5},
-    /* 4 */     {.content = 0b00001000, .length = 5},
-    /* 5 */     {.content = 0b00000000, .length = 5},
-    /* 6 */     {.content = 0b10000000, .length = 5},
-    /* 7 */     {.content = 0b11000000, .length = 5},
-    /* 8 */     {.content = 0b11100000, .length = 5},
-    /* 9 */     {.content = 0b11110000, .length = 5},
-    /* space */ {.content = 0b00000000, .length = 0},
-};
-
-__code const MorseCodeSymbolIndex text[] = {
+__code const MorseCodeSymbolIndex morseCodeText[] = {
     morseCodeSymbolIndex_5, /*morseCodeSymbolIndex_1, morseCodeSymbolIndex_2, morseCodeSymbolIndex_3, */morseCodeSymbolIndex_space,morseCodeSymbolIndex_space,
 };
+MorseCodeSenderState morseCodeSenderState;
 
-
-typedef struct
-{
-    MorseCodeSymbolIndex const * currentSymbol;
-    MorseCodeSymbol currentSymbolWorkingCopy;
-    uint8_t durationTillNextSignal;
-    bool showingSignalAndNotPause;
-}
-MorseCodeSenderState;
-
-static MorseCodeSenderState morseCodeSenderState;
-
-
-bool updateMorseCodeSenderState()
-{
-    bool const previousSignalAndNotPulse = morseCodeSenderState.showingSignalAndNotPause;
-
-    // Note another cycle passed.
-    --morseCodeSenderState.durationTillNextSignal;
-    if (0 == morseCodeSenderState.durationTillNextSignal)
-    {
-        // Signal duration over - check for next signal.
-        bool const lastSymbolFinished = (0 == morseCodeSenderState.currentSymbolWorkingCopy.length);
-
-        // Load next symbol if so required.
-        if (lastSymbolFinished)
-        {
-            // Load next symbol to show after this pause.
-            ++morseCodeSenderState.currentSymbol;
-            if ((text + NELEMS(text)) ==  morseCodeSenderState.currentSymbol)
-            {
-                // Loop back to front of text.
-                morseCodeSenderState.currentSymbol = &text[0];
-            }
-            else
-            {
-                // intentionally empty
-            }
-
-            MorseCodeSymbolIndex const nextSymbolIndex = *morseCodeSenderState.currentSymbol;
-
-            morseCodeSenderState.currentSymbolWorkingCopy.content = morseCodeSymbols[nextSymbolIndex].content;
-            morseCodeSenderState.currentSymbolWorkingCopy.length = morseCodeSymbols[nextSymbolIndex].length;
-        }
-        else
-        {
-            // intentionally empty
-        }
-
-        // Determine next signal.
-        if (morseCodeSymbolIndex_space == *morseCodeSenderState.currentSymbol)
-        {
-            // End of word.
-            morseCodeSenderState.durationTillNextSignal = 7;
-            morseCodeSenderState.showingSignalAndNotPause = false;
-        }
-        else if (morseCodeSenderState.showingSignalAndNotPause)
-        {
-            // Previously content, so determine length of pause.
-            if (lastSymbolFinished)
-            {
-                // End of symbol.
-                morseCodeSenderState.durationTillNextSignal = 3;
-            }
-            else
-            {
-                // Inside symbol.
-                morseCodeSenderState.durationTillNextSignal = 1;
-            }
-            morseCodeSenderState.showingSignalAndNotPause = false;
-        }
-        else // if (!morseCodeSenderState.showingSignalAndNotPause)
-        {
-            // Previously pause, so look for next content.
-#ifndef NDEBUG
-            // Next symbol must be loaded before a pause above [as to correctly handle morseCodeSymbolIndex_space].
-            while (0 == morseCodeSenderState.currentSymbolWorkingCopy.length);
-#endif // NDEBUG
-
-            // Use MSb of currentSymbolWorkingCopy next.
-            MorseCodeSignal const nextSignal = (morseCodeSenderState.currentSymbolWorkingCopy.content & 0x80);
-            // Advance symbol content.
-            morseCodeSenderState.currentSymbolWorkingCopy.content <<= 1;
-            morseCodeSenderState.currentSymbolWorkingCopy.length -= 1;
-            // Apply nextSignal.
-            morseCodeSenderState.durationTillNextSignal = morseCodeSignalToDuration(nextSignal);
-            morseCodeSenderState.showingSignalAndNotPause = true;
-        }
-    }
-
-    return (previousSignalAndNotPulse != morseCodeSenderState.showingSignalAndNotPause);
-}
+#include "morsecode.c"
 
 
 void main()
@@ -254,13 +110,7 @@ void main()
     WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT / 256));
 
     interrupts(); // enable interrupts
-
-    COMPILE_TIME_ASSERT(1 < NELEMS(text));
-    morseCodeSenderState.currentSymbol = &text[0];
-    morseCodeSenderState.currentSymbolWorkingCopy.content = morseCodeSymbols[*morseCodeSenderState.currentSymbol].content;
-    morseCodeSenderState.currentSymbolWorkingCopy.length = morseCodeSymbols[*morseCodeSenderState.currentSymbol].length;
-    morseCodeSenderState.durationTillNextSignal = 1; // allow pre-decrement
-    // morseCodeSenderState.showingSignalAndNotPause = false;
+    morseCodeSenderStateInit();
 
     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
@@ -269,7 +119,7 @@ void main()
 
     while (true)
     {
-        if (updateMorseCodeSenderState())
+        if (morseCodeSenderStateUpdate())
         {
             LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
 

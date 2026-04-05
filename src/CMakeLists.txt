@@ -13,6 +13,9 @@ add_executable(${PROJECT_NAME}
     static_assert.h
     stc8g.h
     unused.h
+    # morsecode.c
+    morsecode.h
+    nelems.h
 )
 
 target_link_libraries(${PROJECT_NAME}
