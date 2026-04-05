@@ -31,6 +31,7 @@ MorseCodeSymbol;
 
 typedef enum
 {
+    // numbers
     morseCodeSymbolIndex_0,
     morseCodeSymbolIndex_1,
     morseCodeSymbolIndex_2,
@@ -41,6 +42,52 @@ typedef enum
     morseCodeSymbolIndex_7,
     morseCodeSymbolIndex_8,
     morseCodeSymbolIndex_9,
+    // letters
+    morseCodeSymbolIndex_a,
+    morseCodeSymbolIndex_b,
+    morseCodeSymbolIndex_c,
+    morseCodeSymbolIndex_d,
+    morseCodeSymbolIndex_e,
+    morseCodeSymbolIndex_f,
+    morseCodeSymbolIndex_g,
+    morseCodeSymbolIndex_h,
+    morseCodeSymbolIndex_i,
+    morseCodeSymbolIndex_j,
+    morseCodeSymbolIndex_k,
+    morseCodeSymbolIndex_l,
+    morseCodeSymbolIndex_m,
+    morseCodeSymbolIndex_n,
+    morseCodeSymbolIndex_o,
+    morseCodeSymbolIndex_p,
+    morseCodeSymbolIndex_q,
+    morseCodeSymbolIndex_r,
+    morseCodeSymbolIndex_s,
+    morseCodeSymbolIndex_t,
+    morseCodeSymbolIndex_u,
+    morseCodeSymbolIndex_v,
+    morseCodeSymbolIndex_w,
+    morseCodeSymbolIndex_x,
+    morseCodeSymbolIndex_y,
+    morseCodeSymbolIndex_z,
+    // punctuation
+    morseCodeSymbolIndex_period,
+    morseCodeSymbolIndex_comma,
+    morseCodeSymbolIndex_questionmark,
+    morseCodeSymbolIndex_apostrophe,
+    morseCodeSymbolIndex_slash,
+    morseCodeSymbolIndex_parenthesisOpen,
+    morseCodeSymbolIndex_parenthesisClose,
+    morseCodeSymbolIndex_colon,
+    morseCodeSymbolIndex_doubleDash,
+    morseCodeSymbolIndex_plus,
+    morseCodeSymbolIndex_minus,
+    morseCodeSymbolIndex_quotation,
+    morseCodeSymbolIndex_at,
+    // non-latin characters
+    morseCodeSymbolIndex_ae,
+    morseCodeSymbolIndex_oe,
+    morseCodeSymbolIndex_ue,
+    // inter-word-spacing
     morseCodeSymbolIndex_space,
 }
 MorseCodeSymbolIndex;

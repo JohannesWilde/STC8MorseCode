@@ -5,7 +5,9 @@
 
 
 // MSb transmitted first, each bit as per MorseCodeSignal.
+// https://en.wikipedia.org/wiki/Morse_code
 __code MorseCodeSymbol const morseCodeSymbols[] = {
+    // numbers
     /* 0 */     {.content = 0b11111000, .length = 5},
     /* 1 */     {.content = 0b01111000, .length = 5},
     /* 2 */     {.content = 0b00111000, .length = 5},
@@ -16,6 +18,52 @@ __code MorseCodeSymbol const morseCodeSymbols[] = {
     /* 7 */     {.content = 0b11000000, .length = 5},
     /* 8 */     {.content = 0b11100000, .length = 5},
     /* 9 */     {.content = 0b11110000, .length = 5},
+    // letters
+    /* a */     {.content = 0b01000000, .length = 2},
+    /* b */     {.content = 0b10000000, .length = 4},
+    /* c */     {.content = 0b10100000, .length = 4},
+    /* d */     {.content = 0b10000000, .length = 3},
+    /* e */     {.content = 0b00000000, .length = 1},
+    /* f */     {.content = 0b00100000, .length = 4},
+    /* g */     {.content = 0b11000000, .length = 3},
+    /* h */     {.content = 0b00000000, .length = 4},
+    /* i */     {.content = 0b00000000, .length = 2},
+    /* j */     {.content = 0b01110000, .length = 4},
+    /* k */     {.content = 0b10100000, .length = 3},
+    /* l */     {.content = 0b01000000, .length = 4},
+    /* m */     {.content = 0b11000000, .length = 2},
+    /* n */     {.content = 0b10000000, .length = 2},
+    /* o */     {.content = 0b11100000, .length = 3},
+    /* p */     {.content = 0b01100000, .length = 4},
+    /* q */     {.content = 0b11010000, .length = 4},
+    /* r */     {.content = 0b01000000, .length = 3},
+    /* s */     {.content = 0b00000000, .length = 3},
+    /* t */     {.content = 0b10000000, .length = 1},
+    /* u */     {.content = 0b00100000, .length = 3},
+    /* v */     {.content = 0b00010000, .length = 4},
+    /* w */     {.content = 0b01100000, .length = 3},
+    /* x */     {.content = 0b10010000, .length = 4},
+    /* y */     {.content = 0b10110000, .length = 4},
+    /* z */     {.content = 0b11000000, .length = 4},
+    // punctuation
+    /* . */     {.content = 0b01010100, .length = 6},
+    /* , */     {.content = 0b11001100, .length = 6},
+    /* ? */     {.content = 0b00110000, .length = 6},
+    /* ' */     {.content = 0b01111000, .length = 6},
+    /* / */     {.content = 0b10010000, .length = 5},
+    /* ( */     {.content = 0b10110000, .length = 5},
+    /* ) */     {.content = 0b10110100, .length = 6},
+    /* : */     {.content = 0b11100000, .length = 6},
+    /* = */     {.content = 0b10001000, .length = 5},
+    /* + */     {.content = 0b01010000, .length = 5},
+    /* - */     {.content = 0b10000100, .length = 6},
+    /* " */     {.content = 0b01001000, .length = 6},
+    /* @ */     {.content = 0b01101000, .length = 6},
+    // non-latin characters
+    /* ae */    {.content = 0b01010000, .length = 4},
+    /* oe */    {.content = 0b11100000, .length = 4},
+    /* ue */    {.content = 0b00110000, .length = 4},
+    // inter-word-spacing
     /* space */ {.content = 0b00000000, .length = 0},
 };
 
