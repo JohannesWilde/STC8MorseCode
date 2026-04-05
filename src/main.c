@@ -267,7 +267,7 @@ void main()
 
             show(neoPixelData,
                  /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
-                 /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 255 : 0);
+                 /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 128 : 0);
         }
         else
         {
