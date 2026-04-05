@@ -19,13 +19,6 @@
 #define NEO_PIXEL_PIN MAKE_PIN_NAME(NEO_PIXEL_PORT_NUMBER, NEO_PIXEL_PIN_NUMBER)
 
 
-// Prescaler for different time domains.
-// 20 Hz -> 2 Hz
-#define PRE_SCALER_ONE_INIT (10 - 1)
-
-static uint8_t preScalerOne = PRE_SCALER_ONE_INIT;
-
-
 #define NEO_PIXEL_DATA_BYTES_PER_PIXEL 4
 #define NEO_PIXEL_DATA_OFFSET_RED 1
 #define NEO_PIXEL_DATA_OFFSET_GREEN 0
@@ -195,21 +188,6 @@ void main()
 
     while (true)
     {
-        if (updatePrescaler(&preScalerOne, PRE_SCALER_ONE_INIT))
-        {
-            // Somewhat slower.
-
-            // LED_PIN ^= 1;
-            __asm__ (
-                "; Toggle the LED at P1.2.\n"
-                "CPL _P1_2"
-            );
-        }
-        else
-        {
-            // intentionally empty
-        }
-
         // Note another cycle passed.
         --morseCodeSenderState.durationTillNextSignal;
         if (0 == morseCodeSenderState.durationTillNextSignal)
@@ -280,12 +258,20 @@ void main()
                 morseCodeSenderState.durationTillNextSignal = morseCodeSignalToDuration(nextSignal);
                 morseCodeSenderState.showingSignalAndNotPause = true;
             }
+
+
+
+
+            LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
+
+            show(neoPixelData,
+                 /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
+                 /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 255 : 0);
         }
         else
         {
             // intentionally empty
         }
-
 
 
         // if (BRIGHTNESS_DELTA_STEP > colorBrightness)
@@ -311,7 +297,6 @@ void main()
         //     // intentionally empty
         // }
 
-        show(neoPixelData, /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL, /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 255 : 0);
 
         PCON |= 0x02;  // PCON.PD = 1 - Enter power-down mode
         SFRX_ON();
