@@ -117,7 +117,7 @@ if __name__ == "__main__":
     output_file_name = args.output_path
     output_file_creation_mode = 'x' if args.no_overwrite else 'w'
 
-    with open(input_file_name, "r") as input_file:
+    with open(input_file_name, "r", encoding="utf-8") as input_file:
         input = input_file.read()
 
     return_value = 0
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     # print(output)
 
     if (0 == return_value):
-        with open(output_file_name, output_file_creation_mode) as output_file:
+        with open(output_file_name, output_file_creation_mode, encoding="utf-8") as output_file:
             output_file.write(output)
 
     exit(return_value)
