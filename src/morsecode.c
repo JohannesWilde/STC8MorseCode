@@ -75,7 +75,7 @@ void morseCodeSenderStateInit(void)
     morseCodeSenderState.currentSymbolWorkingCopy.content = morseCodeSymbols[*morseCodeSenderState.currentSymbol].content;
     morseCodeSenderState.currentSymbolWorkingCopy.length = morseCodeSymbols[*morseCodeSenderState.currentSymbol].length;
     morseCodeSenderState.durationTillNextSignal = 1; // allow pre-decrement
-    // morseCodeSenderState.showingSignalAndNotPause = false;
+    morseCodeSenderState.showingSignalAndNotPause = false;
 }
 
 

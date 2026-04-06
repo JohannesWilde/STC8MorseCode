@@ -21,7 +21,8 @@
 
 #define WAKEUP_TIMER_COUNT_LOOP ((/*F_WAKEUP_TIMER*/ 100 / F_SYS_TICK / 16) - 1)
 #define WAKEUP_TIMER_COUNT_MORSE ((F_WAKEUP_TIMER / F_SYS_TICK / 16) - 1)
-#define LOOP_BRIGHTNESS_RAMP_UP_CYCLES 1
+#define LOOP_BRIGHTNESS_RAMP_UP_PRE_SCALER (2 - 1)
+#define MORSE_PRE_START_DELAY 7
 
 #define LED_PIN MAKE_PIN_NAME(LED_PORT_NUMBER, LED_PIN_NUMBER)
 #define NEO_PIXEL_PIN MAKE_PIN_NAME(NEO_PIXEL_PORT_NUMBER, NEO_PIXEL_PIN_NUMBER)
@@ -102,7 +103,7 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
         // ramp up brightness
         if ((NEO_PIXEL_BRIGHTNESS_MAX > data->brightness))
         {
-            if (updatePrescaler(&data->counter, LOOP_BRIGHTNESS_RAMP_UP_CYCLES))
+            if (updatePrescaler(&data->counter, LOOP_BRIGHTNESS_RAMP_UP_PRE_SCALER))
             {
                 ++data->brightness;
             }
@@ -156,23 +157,35 @@ FunctionPointerPrototype statemachineHandlerMorse(StatemachineStage stage, void 
     {
     case StatemachineStageInit:
     {
-
         morseCodeSenderStateInit();
+
+        data->counter = MORSE_PRE_START_DELAY;
+        LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
+        show(neoPixelData,
+             /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
+             /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 128 : 0);
         break;
     }
     case StatemachineStageProcess:
     {
-        if (morseCodeSenderStateUpdate())
+        if (0 < data->counter)
         {
-            LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
-
-            show(neoPixelData,
-                 /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
-                 /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 128 : 0);
+            --data->counter;
         }
         else
         {
-            // intentionally empty
+            if (morseCodeSenderStateUpdate())
+            {
+                LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
+
+                show(neoPixelData,
+                     /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
+                     /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 128 : 0);
+            }
+            else
+            {
+                // intentionally empty
+            }
         }
         break;
     }
