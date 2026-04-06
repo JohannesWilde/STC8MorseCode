@@ -35,7 +35,7 @@ conversion = {
     's': "morseCodeSymbolIndex_s",
     't': "morseCodeSymbolIndex_t",
     'u': "morseCodeSymbolIndex_u",
-    'b': "morseCodeSymbolIndex_v",
+    'v': "morseCodeSymbolIndex_v",
     'w': "morseCodeSymbolIndex_w",
     'x': "morseCodeSymbolIndex_x",
     'y': "morseCodeSymbolIndex_y",
