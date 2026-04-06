@@ -89,6 +89,7 @@ conversion = {
     'Ü': "morseCodeSymbolIndex_ue",
     # inter-word-spacing
     ' ': "morseCodeSymbolIndex_space",
+    '\n': "morseCodeSymbolIndex_space",
 }
 
 # Source - https://stackoverflow.com/a/15008806
