@@ -1,3 +1,5 @@
+import argparse
+import sys
 
 conversion = {
     # numbers
@@ -89,10 +91,31 @@ conversion = {
     ' ': "morseCodeSymbolIndex_space",
 }
 
+# Source - https://stackoverflow.com/a/15008806
+# Posted by mgilson, modified by community. See post 'Timeline' for change history
+# Retrieved 2026-04-06, License - CC BY-SA 4.0
+
+def t_or_f(arg):
+    ua = str(arg).upper()
+    if 'TRUE' == ua:
+       return True
+    elif 'FALSE' == ua:
+       return False
+    else:
+       raise ValueError(f"Non-boolean string \"{arg}\" - only \"True\" or \"False\" are supported.")
+
+
 if __name__ == "__main__":
 
-    input_file_name = "morsecodetext_raw.txt"
-    output_file_name = "morsecodetext.c"
+    parser = argparse.ArgumentParser(description="Parsing text and converting it to a list of MorseCodeSymbolIndex.")
+    parser.add_argument("-i", "--input_path", help="Path to the input file.", required=True)
+    parser.add_argument("-o", "--output_path", help="Path where to create the output file.", required=True)
+    parser.add_argument("-n", "--no-overwrite", default="False", help="Do not overwrite the output file if it already exists [default False].", type=t_or_f)
+    args = parser.parse_args()
+
+    input_file_name = args.input_path
+    output_file_name = args.output_path
+    output_file_creation_mode = 'x' if args.no_overwrite else 'w'
 
     with open(input_file_name, "r") as input_file:
         input = input_file.read()
@@ -110,7 +133,7 @@ if __name__ == "__main__":
     # print(output)
 
     if (0 == return_value):
-        with open(output_file_name, "w") as output_file:
+        with open(output_file_name, output_file_creation_mode) as output_file:
             output_file.write(output)
 
     exit(return_value)
