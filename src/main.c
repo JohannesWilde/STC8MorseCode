@@ -1,4 +1,5 @@
 #include "8051_helpers.h"
+#include "color.h"
 #include "configuration.h"
 #include "morsecode.h"
 #include "nelems.h"
@@ -32,37 +33,6 @@ static uint8_t neoPixelData[1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL];
 
 
 
-typedef struct
-{
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
-}
-Color;
-
-typedef struct
-{
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
-    uint8_t white;
-}
-ExtendedColor;
-
-
-__code ExtendedColor const violet = {
-    .red = 189,
-    .green = 0,
-    .blue = 206,
-    .white = 0
-};
-
-__code ExtendedColor const yellow = {
-    .red = 255,
-    .green = 200,
-    .blue = 0,
-    .white = 0
-};
 
 
 __code const MorseCodeSymbolIndex morseCodeText[] = {
@@ -71,6 +41,121 @@ __code const MorseCodeSymbolIndex morseCodeText[] = {
 MorseCodeSenderState morseCodeSenderState;
 
 #include "morsecode.c"
+
+
+
+
+
+// Statemachine
+
+typedef struct
+{
+    uint8_t brightness;
+    uint16_t hue;
+}
+StatemachineData;
+
+static StatemachineData statemachineData;
+static Statemachine statemachine;
+
+
+FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, void * data);
+FunctionPointerPrototype statemachineHandlerMorse(StatemachineStage stage, void * data);
+
+
+FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, void * const untypedData)
+{
+    StatemachineData * const data = (StatemachineData *)untypedData;
+    StatemachineHandler nextHandler = &statemachineHandlerLoopColors;
+    switch (stage)
+    {
+    case StatemachineStageInit:
+    {
+
+        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
+        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
+        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
+        // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+        show(neoPixelData,
+             /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
+             /*brightness*/ 128);
+
+        break;
+    }
+    case StatemachineStageProcess:
+    {
+        // if (BRIGHTNESS_DELTA_STEP > colorBrightness)
+        // {
+        //     colorDelta = BRIGHTNESS_DELTA_STEP;
+
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = violet.red;
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = violet.green;
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = violet.blue;
+        //     // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = violet.white;
+        // }
+        // else if ((255 - BRIGHTNESS_DELTA_STEP) < colorBrightness)
+        // {
+        //     colorDelta = (uint8_t)(-BRIGHTNESS_DELTA_STEP);
+
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
+        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
+        //     // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+        // }
+        // else
+        // {
+        //     // intentionally empty
+        // }
+
+        StatemachineHandler nextHandler = &statemachineHandlerMorse;
+
+        break;
+    }
+    case StatemachineStageDeinit:
+    {
+        // intentionally empty
+        break;
+    }
+    }
+    return (FunctionPointerPrototype)nextHandler;
+}
+
+FunctionPointerPrototype statemachineHandlerMorse(StatemachineStage stage, void * const untypedData)
+{
+    StatemachineData * const data = (StatemachineData *)untypedData;
+    StatemachineHandler nextHandler = &statemachineHandlerMorse;
+    switch (stage)
+    {
+    case StatemachineStageInit:
+    {
+        morseCodeSenderStateInit();
+        break;
+    }
+    case StatemachineStageProcess:
+    {
+        if (morseCodeSenderStateUpdate())
+        {
+            LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
+
+            show(neoPixelData,
+                 /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
+                 /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 128 : 0);
+        }
+        else
+        {
+            // intentionally empty
+        }
+        break;
+    }
+    case StatemachineStageDeinit:
+    {
+        // intentionally empty
+        break;
+    }
+    }
+    return (FunctionPointerPrototype)nextHandler;
+}
+
 
 
 void main()
@@ -105,53 +190,12 @@ void main()
     WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT / 256));
 
     interrupts(); // enable interrupts
-    morseCodeSenderStateInit();
 
-    neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
-    neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
-    neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
-    // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+    statemachineInit(&statemachine, &statemachineHandlerLoopColors);
 
     while (true)
     {
-        if (morseCodeSenderStateUpdate())
-        {
-            LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
-
-            show(neoPixelData,
-                 /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
-                 /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 128 : 0);
-        }
-        else
-        {
-            // intentionally empty
-        }
-
-
-
-        // if (BRIGHTNESS_DELTA_STEP > colorBrightness)
-        // {
-        //     colorDelta = BRIGHTNESS_DELTA_STEP;
-
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = violet.red;
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = violet.green;
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = violet.blue;
-        //     // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = violet.white;
-        // }
-        // else if ((255 - BRIGHTNESS_DELTA_STEP) < colorBrightness)
-        // {
-        //     colorDelta = (uint8_t)(-BRIGHTNESS_DELTA_STEP);
-
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
-        //     // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
-        // }
-        // else
-        // {
-        //     // intentionally empty
-        // }
-
+        statemachineProcess(&statemachine, &statemachineData);
 
         PCON |= 0x02;  // PCON.PD = 1 - Enter power-down mode
         SFRX_ON();
