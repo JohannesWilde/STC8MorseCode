@@ -18,6 +18,7 @@ add_custom_target(${PROJECT_NAME}_text
                     --input_path ${MORSE_CODE_TEXT_TEXT_FILE}
                     --output_path ${MORSE_CODE_TEXT_SOURCE_FILE}
                   SOURCES ${MORSE_CODE_TEXT_TEXT_FILE}
+                  BYPRODUCTS ${MORSE_CODE_TEXT_SOURCE_FILE}
                   COMMENT "Convert raw text file \"${MORSE_CODE_TEXT_TEXT_FILE}\" to MorseCodeSymbol list in \"${MORSE_CODE_TEXT_SOURCE_FILE}\"."
 )
 
