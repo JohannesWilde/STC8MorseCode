@@ -4,6 +4,7 @@
 #include "nelems.h"
 #include "pinout.h"
 #include "prescaler.h"
+#include "statemachine.h"
 #include "static_assert.h"
 #include "stc8g.h"
 #include "ws2812.h"
@@ -29,13 +30,6 @@
 
 static uint8_t neoPixelData[1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL];
 
-
-
-
-#define BRIGHTNESS_DELTA_STEP 1
-
-static uint8_t colorBrightness;
-static uint8_t colorDelta = BRIGHTNESS_DELTA_STEP;
 
 
 typedef struct
