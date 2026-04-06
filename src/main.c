@@ -61,7 +61,7 @@ typedef struct
 StatemachineData;
 
 static __code uint16_t const hueYellow = 22676;
-static __code uint16_t const hueViolet = 0;
+static __code uint16_t const hueViolet = 5482;
 
 #define NEO_PIXEL_BRIGHTNESS_MAX 128
 
