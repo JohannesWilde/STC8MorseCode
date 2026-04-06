@@ -77,6 +77,10 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
     case StatemachineStageInit:
     {
 
+        #define WAKEUP_TIMER_COUNT ((/*F_WAKEUP_TIMER*/ 30 / F_SYS_TICK / 16) - 1)
+        COMPILE_TIME_ASSERT((1ull << 15) > WAKEUP_TIMER_COUNT);
+        WKTCL = WAKEUP_TIMER_COUNT % 256;
+        WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT / 256));
         break;
     }
     case StatemachineStageProcess:
@@ -109,7 +113,10 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
     }
     case StatemachineStageDeinit:
     {
-        // intentionally empty
+        #define WAKEUP_TIMER_COUNT ((F_WAKEUP_TIMER / F_SYS_TICK / 16) - 1)
+        COMPILE_TIME_ASSERT((1ull << 15) > WAKEUP_TIMER_COUNT);
+        WKTCL = WAKEUP_TIMER_COUNT % 256;
+        WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT / 256));
         break;
     }
     }
@@ -124,6 +131,7 @@ FunctionPointerPrototype statemachineHandlerMorse(StatemachineStage stage, void 
     {
     case StatemachineStageInit:
     {
+
         morseCodeSenderStateInit();
         break;
     }
