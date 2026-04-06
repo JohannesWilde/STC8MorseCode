@@ -13,16 +13,18 @@ find_package(Python REQUIRED
 set(MORSE_CODE_TEXT_TEXT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/morsecodetext_raw.txt")
 set(MORSE_CODE_TEXT_SOURCE_FILE "${CMAKE_CURRENT_BINARY_DIR}/morsecodetext.c")
 
-add_custom_target(${PROJECT_NAME}_text
-                  ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/morsecodetext_conversion.py
+add_custom_command(OUTPUT ${MORSE_CODE_TEXT_SOURCE_FILE}
+                   COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/morsecodetext_conversion.py
                     --input_path ${MORSE_CODE_TEXT_TEXT_FILE}
                     --output_path ${MORSE_CODE_TEXT_SOURCE_FILE}
-                  SOURCES ${MORSE_CODE_TEXT_TEXT_FILE}
-                  BYPRODUCTS ${MORSE_CODE_TEXT_SOURCE_FILE}
-                  COMMENT "Convert raw text file \"${MORSE_CODE_TEXT_TEXT_FILE}\" to MorseCodeSymbol list in \"${MORSE_CODE_TEXT_SOURCE_FILE}\"."
+                   DEPENDS ${MORSE_CODE_TEXT_TEXT_FILE}
+                   COMMENT "Convert raw text file \"${MORSE_CODE_TEXT_TEXT_FILE}\" to MorseCodeSymbol list in \"${MORSE_CODE_TEXT_SOURCE_FILE}\"."
 )
-
-
+add_custom_target(${PROJECT_NAME}_text
+                  ${Python_EXECUTABLE} -c "exit(0)"
+                  SOURCES ${MORSE_CODE_TEXT_SOURCE_FILE}
+                  COMMENT "Check whether to convert raw text file \"${MORSE_CODE_TEXT_TEXT_FILE}\" to MorseCodeSymbol list in \"${MORSE_CODE_TEXT_SOURCE_FILE}\"."
+)
 
 
 add_executable(${PROJECT_NAME}
