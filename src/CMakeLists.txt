@@ -21,7 +21,7 @@ add_custom_command(OUTPUT ${MORSE_CODE_TEXT_SOURCE_FILE}
                    COMMENT "Convert raw text file \"${MORSE_CODE_TEXT_TEXT_FILE}\" to MorseCodeSymbol list in \"${MORSE_CODE_TEXT_SOURCE_FILE}\"."
 )
 add_custom_target(${PROJECT_NAME}_text
-                  ${Python_EXECUTABLE} -c "exit(0)"
+                  cmake -E true
                   SOURCES ${MORSE_CODE_TEXT_SOURCE_FILE}
                   COMMENT "Check whether to convert raw text file \"${MORSE_CODE_TEXT_TEXT_FILE}\" to MorseCodeSymbol list in \"${MORSE_CODE_TEXT_SOURCE_FILE}\"."
 )
