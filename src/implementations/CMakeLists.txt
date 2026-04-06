@@ -14,6 +14,7 @@ add_library(Color_yellow
 add_library(Color INTERFACE)
 
 target_link_libraries(Color
+    INTERFACE Color_hueToRgb
     INTERFACE Color_violet
     INTERFACE Color_yellow
 )

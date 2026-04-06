@@ -8,7 +8,7 @@ Color hueToRgb(uint16_t hue)
 
     Color color;
 
-    color.red = 0;
+    color.red = 0xff;
     color.green = 0;
     color.blue = 0;
 

@@ -55,6 +55,11 @@ typedef struct
 }
 StatemachineData;
 
+static __code uint16_t const hueYellow = 1;
+static __code uint16_t const hueViolet = 1;
+
+#define NEO_PIXEL_BRIGHTNESS_MAX 128
+
 static StatemachineData statemachineData;
 static Statemachine statemachine;
 
@@ -72,42 +77,33 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
     case StatemachineStageInit:
     {
 
-        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
-        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
-        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
-        // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
-        show(neoPixelData,
-             /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
-             /*brightness*/ 128);
-
         break;
     }
     case StatemachineStageProcess:
     {
-        // if (BRIGHTNESS_DELTA_STEP > colorBrightness)
-        // {
-        //     colorDelta = BRIGHTNESS_DELTA_STEP;
+        // ramp up brightness
+        if (NEO_PIXEL_BRIGHTNESS_MAX > data->brightness)
+        {
+            ++data->brightness;
+        }
+        else
+        {
 
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = violet.red;
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = violet.green;
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = violet.blue;
-        //     // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = violet.white;
-        // }
-        // else if ((255 - BRIGHTNESS_DELTA_STEP) < colorBrightness)
-        // {
-        //     colorDelta = (uint8_t)(-BRIGHTNESS_DELTA_STEP);
+        }
 
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = yellow.red;
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = yellow.green;
-        //     neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = yellow.blue;
-        //     // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
-        // }
-        // else
-        // {
-        //     // intentionally empty
-        // }
+        data->hue += 65536ull / 40;
 
-        StatemachineHandler nextHandler = &statemachineHandlerMorse;
+        Color const color = hueToRgb(data->hue);
+
+        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = color.red;
+        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = color.green;
+        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = color.blue;
+        // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+        show(neoPixelData,
+             /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
+             /*brightness*/ data->brightness);
+
+        // StatemachineHandler nextHandler = &statemachineHandlerMorse;
 
         break;
     }
