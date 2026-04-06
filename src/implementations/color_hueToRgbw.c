@@ -19,7 +19,7 @@ ExtendedColor hueToRgbw(uint16_t hue)
     uint8_t const integerDiff = (uint8_t)(hueDiff * 15 / 257); // 255 / (65535 / 15) = 15 / 257
     uint8_t const inverseIntegerDiff = 255 - integerDiff;
 
-    switch (hueBase)
+    switch ((uint8_t)hueBase)
     {
     case 15:
         // fall through

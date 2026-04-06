@@ -21,7 +21,7 @@
 
 #define WAKEUP_TIMER_COUNT_LOOP ((/*F_WAKEUP_TIMER*/ 100 / F_SYS_TICK / 16) - 1)
 #define WAKEUP_TIMER_COUNT_MORSE ((F_WAKEUP_TIMER / F_SYS_TICK / 16) - 1)
-#define LOOP_BRIGHTNESS_RAMP_UP_CYCLES 5
+#define LOOP_BRIGHTNESS_RAMP_UP_CYCLES 1
 
 #define LED_PIN MAKE_PIN_NAME(LED_PORT_NUMBER, LED_PIN_NUMBER)
 #define NEO_PIXEL_PIN MAKE_PIN_NAME(NEO_PIXEL_PORT_NUMBER, NEO_PIXEL_PIN_NUMBER)
@@ -55,11 +55,12 @@ typedef struct
     uint8_t counter;
     uint8_t brightness;
     uint16_t hue;
+    uint16_t targetHue;
 }
 StatemachineData;
 
-static __code uint16_t const hueYellow = 1;
-static __code uint16_t const hueViolet = 1;
+static __code uint16_t const hueYellow = 22676;
+static __code uint16_t const hueViolet = 0;
 
 #define NEO_PIXEL_BRIGHTNESS_MAX 128
 
@@ -85,18 +86,41 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
 
         data->counter = 0;
 
+        if (10 > (data->targetHue - hueYellow))
+        {
+            data->targetHue = hueViolet;
+        }
+        else
+        {
+            data->targetHue = hueYellow;
+        }
+
         break;
     }
     case StatemachineStageProcess:
     {
         // ramp up brightness
-        if ((NEO_PIXEL_BRIGHTNESS_MAX > data->brightness) && updatePrescaler(&data->counter, LOOP_BRIGHTNESS_RAMP_UP_CYCLES))
+        if ((NEO_PIXEL_BRIGHTNESS_MAX > data->brightness))
         {
-            ++data->brightness;
+            if (updatePrescaler(&data->counter, LOOP_BRIGHTNESS_RAMP_UP_CYCLES))
+            {
+                ++data->brightness;
+            }
+            else
+            {
+                // intentionally empty
+            }
         }
         else
         {
-
+            if (10 > (data->targetHue - data->hue))
+            {
+                nextHandler = &statemachineHandlerMorse;
+            }
+            else
+            {
+                // intentionally empty
+            }
         }
 
         data->hue += 10;
@@ -110,8 +134,6 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
         show(neoPixelData,
              /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
              /*brightness*/ data->brightness);
-
-        // StatemachineHandler nextHandler = &statemachineHandlerMorse;
 
         break;
     }
