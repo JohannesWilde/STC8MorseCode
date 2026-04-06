@@ -174,24 +174,37 @@ FunctionPointerPrototype statemachineHandlerMorse(StatemachineStage stage, void 
         }
         else
         {
-            if (morseCodeSenderStateUpdate())
+            MorseCodeSenderUpdateResult const result = morseCodeSenderStateUpdate();
+
+            switch (result)
+            {
+            case morseCodeSenderUpdateResult_update:
             {
                 LED_PIN = morseCodeSenderState.showingSignalAndNotPause;
 
                 show(neoPixelData,
                      /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
                      /*brightness*/ morseCodeSenderState.showingSignalAndNotPause ? 128 : 0);
+
+                break;
             }
-            else
+            case morseCodeSenderUpdateResult_noUpdate:
             {
                 // intentionally empty
+                break;
+            }
+            case morseCodeSenderUpdateResult_end:
+            {
+                nextHandler = &statemachineHandlerLoopColors;
+                break;
+            }
             }
         }
         break;
     }
     case StatemachineStageDeinit:
     {
-        // intentionally empty
+        data->brightness = 0; // I do end on a pause - so LED off.
         break;
     }
     }

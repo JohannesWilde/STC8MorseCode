@@ -103,7 +103,16 @@ typedef struct
 MorseCodeSenderState;
 
 
+typedef enum
+{
+    morseCodeSenderUpdateResult_noUpdate,
+    morseCodeSenderUpdateResult_update,
+    morseCodeSenderUpdateResult_end
+}
+MorseCodeSenderUpdateResult;
+
+
 void morseCodeSenderStateInit(void);
-bool morseCodeSenderStateUpdate(void);
+MorseCodeSenderUpdateResult morseCodeSenderStateUpdate(void);
 
 #endif // MORSECODE_H
