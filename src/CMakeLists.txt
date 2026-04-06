@@ -1,4 +1,7 @@
 
+add_subdirectory(implementations)
+
+
 add_library(WS2812
     ws2812.h
     ws2812.c
@@ -43,6 +46,7 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
+    PRIVATE Statemachine
     PRIVATE WS2812
 )
 
