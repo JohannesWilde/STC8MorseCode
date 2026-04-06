@@ -22,6 +22,7 @@
 #define WAKEUP_TIMER_COUNT_LOOP ((/*F_WAKEUP_TIMER*/ 100 / F_SYS_TICK / 16) - 1)
 #define WAKEUP_TIMER_COUNT_MORSE ((F_WAKEUP_TIMER / F_SYS_TICK / 16) - 1)
 #define LOOP_BRIGHTNESS_RAMP_UP_PRE_SCALER (2 - 1)
+#define LOOP_BRIGHTNESS_COMPLET_PRE_SCALER (2 - 1)
 #define MORSE_PRE_START_DELAY 7
 
 #define LED_PIN MAKE_PIN_NAME(LED_PORT_NUMBER, LED_PIN_NUMBER)
@@ -53,7 +54,10 @@ MorseCodeSenderState morseCodeSenderState;
 
 typedef struct
 {
+    // use custom as per mode
     uint8_t counter;
+    uint8_t counter2;
+    // retain over all modes
     uint8_t brightness;
     uint16_t hue;
     uint16_t targetHue;
@@ -86,6 +90,7 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
         WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT_LOOP / 256));
 
         data->counter = 0;
+        data->counter2 = LOOP_BRIGHTNESS_COMPLET_PRE_SCALER;
 
         if (10 > (data->targetHue - hueYellow))
         {
@@ -116,7 +121,14 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
         {
             if (10 > (data->targetHue - data->hue))
             {
-                nextHandler = &statemachineHandlerMorse;
+                if (updatePrescaler(&data->counter2, LOOP_BRIGHTNESS_COMPLET_PRE_SCALER))
+                {
+                    nextHandler = &statemachineHandlerMorse;
+                }
+                else
+                {
+                    // intentionally empty
+                }
             }
             else
             {
