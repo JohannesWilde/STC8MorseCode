@@ -19,6 +19,10 @@
 #define xstr(s) str(s)
 #define str(s) #s
 
+#define WAKEUP_TIMER_COUNT_LOOP ((/*F_WAKEUP_TIMER*/ 100 / F_SYS_TICK / 16) - 1)
+#define WAKEUP_TIMER_COUNT_MORSE ((F_WAKEUP_TIMER / F_SYS_TICK / 16) - 1)
+#define LOOP_BRIGHTNESS_RAMP_UP_CYCLES 5
+
 #define LED_PIN MAKE_PIN_NAME(LED_PORT_NUMBER, LED_PIN_NUMBER)
 #define NEO_PIXEL_PIN MAKE_PIN_NAME(NEO_PIXEL_PORT_NUMBER, NEO_PIXEL_PIN_NUMBER)
 
@@ -30,8 +34,6 @@
 #define NEO_PIXEL_DATA_OFFSET_WHITE 3
 
 static uint8_t neoPixelData[1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL];
-
-
 
 
 
@@ -50,6 +52,7 @@ MorseCodeSenderState morseCodeSenderState;
 
 typedef struct
 {
+    uint8_t counter;
     uint8_t brightness;
     uint16_t hue;
 }
@@ -76,17 +79,18 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
     {
     case StatemachineStageInit:
     {
+        COMPILE_TIME_ASSERT((1ull << 15) > WAKEUP_TIMER_COUNT_LOOP);
+        WKTCL = WAKEUP_TIMER_COUNT_LOOP % 256;
+        WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT_LOOP / 256));
 
-        #define WAKEUP_TIMER_COUNT ((/*F_WAKEUP_TIMER*/ 30 / F_SYS_TICK / 16) - 1)
-        COMPILE_TIME_ASSERT((1ull << 15) > WAKEUP_TIMER_COUNT);
-        WKTCL = WAKEUP_TIMER_COUNT % 256;
-        WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT / 256));
+        data->counter = 0;
+
         break;
     }
     case StatemachineStageProcess:
     {
         // ramp up brightness
-        if (NEO_PIXEL_BRIGHTNESS_MAX > data->brightness)
+        if ((NEO_PIXEL_BRIGHTNESS_MAX > data->brightness) && updatePrescaler(&data->counter, LOOP_BRIGHTNESS_RAMP_UP_CYCLES))
         {
             ++data->brightness;
         }
@@ -95,14 +99,14 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
 
         }
 
-        data->hue += 65536ull / 40;
+        data->hue += 10;
 
-        Color const color = hueToRgb(data->hue);
+        ExtendedColor const color = hueToRgbw(data->hue);
 
         neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_RED]    = color.red;
         neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_GREEN]  = color.green;
         neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_BLUE]   = color.blue;
-        // neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = yellow.white;
+        neoPixelData[0 * NEO_PIXEL_DATA_BYTES_PER_PIXEL + NEO_PIXEL_DATA_OFFSET_WHITE]  = color.white;
         show(neoPixelData,
              /*bytes*/ 1 * NEO_PIXEL_DATA_BYTES_PER_PIXEL,
              /*brightness*/ data->brightness);
@@ -113,10 +117,9 @@ FunctionPointerPrototype statemachineHandlerLoopColors(StatemachineStage stage, 
     }
     case StatemachineStageDeinit:
     {
-        #define WAKEUP_TIMER_COUNT ((F_WAKEUP_TIMER / F_SYS_TICK / 16) - 1)
-        COMPILE_TIME_ASSERT((1ull << 15) > WAKEUP_TIMER_COUNT);
-        WKTCL = WAKEUP_TIMER_COUNT % 256;
-        WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT / 256));
+        COMPILE_TIME_ASSERT((1ull << 15) > WAKEUP_TIMER_COUNT_MORSE);
+        WKTCL = WAKEUP_TIMER_COUNT_MORSE % 256;
+        WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT_MORSE / 256));
         break;
     }
     }
@@ -188,10 +191,9 @@ void main()
         SFRX_OFF();
     #endif
 
-    #define WAKEUP_TIMER_COUNT ((F_WAKEUP_TIMER / F_SYS_TICK / 16) - 1)
-    COMPILE_TIME_ASSERT((1ull << 15) > WAKEUP_TIMER_COUNT);
-    WKTCL = WAKEUP_TIMER_COUNT % 256;
-    WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT / 256));
+    COMPILE_TIME_ASSERT((1ull << 15) > WAKEUP_TIMER_COUNT_MORSE);
+    WKTCL = WAKEUP_TIMER_COUNT_MORSE % 256;
+    WKTCH = ((/*enabled*/ 1) << 7) | (0x7f & (WAKEUP_TIMER_COUNT_MORSE / 256));
 
     interrupts(); // enable interrupts
 

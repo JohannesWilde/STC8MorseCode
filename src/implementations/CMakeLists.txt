@@ -2,7 +2,7 @@
 # Color
 
 add_library(Color_hueToRgb
-    color_hueToRgb.c
+    color_hueToRgbw.c
 )
 add_library(Color_violet
     color_violet.c

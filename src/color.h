@@ -22,7 +22,7 @@ typedef struct
 ExtendedColor;
 
 
-Color hueToRgb(uint16_t hue);
+ExtendedColor hueToRgbw(uint16_t hue);
 
 
 extern __code Color const violet;
