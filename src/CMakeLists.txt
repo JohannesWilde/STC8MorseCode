@@ -4,6 +4,26 @@ add_library(WS2812
     ws2812.c
 )
 
+
+
+find_package(Python REQUIRED
+    COMPONENTS Interpreter
+)
+
+set(MORSE_CODE_TEXT_TEXT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/morsecodetext_raw.txt")
+set(MORSE_CODE_TEXT_SOURCE_FILE "${CMAKE_CURRENT_BINARY_DIR}/morsecodetext.c")
+
+add_custom_target(${PROJECT_NAME}_text
+                  ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/morsecodetext_conversion.py
+                    --input_path ${MORSE_CODE_TEXT_TEXT_FILE}
+                    --output_path ${MORSE_CODE_TEXT_SOURCE_FILE}
+                  SOURCES ${MORSE_CODE_TEXT_TEXT_FILE}
+                  COMMENT "Convert raw text file \"${MORSE_CODE_TEXT_TEXT_FILE}\" to MorseCodeSymbol list in \"${MORSE_CODE_TEXT_SOURCE_FILE}\"."
+)
+
+
+
+
 add_executable(${PROJECT_NAME}
     8051_helpers.h
     configuration.h
@@ -14,6 +34,7 @@ add_executable(${PROJECT_NAME}
     stc8g.h
     unused.h
     # morsecode.c
+    # ${MORSE_CODE_TEXT_SOURCE_FILE}
     morsecode.h
     nelems.h
 )
@@ -22,15 +43,25 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE WS2812
 )
 
+add_dependencies(${PROJECT_NAME}
+    ${PROJECT_NAME}_text
+)
+
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE MORSE_CODE_TEXT_SOURCE_FILE="${MORSE_CODE_TEXT_SOURCE_FILE}"
+)
+
 ihx_to_hex(${PROJECT_NAME})
 
 include_directories("c:/Program Files/SDCC/include/")
 
+
+
 # C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\python.exe -m stcgal --port COM8 --baud 115200 --protocol stc8g "C:\Users\User\Documents\STC\build\UsbTurnoffTimer-SDCC-Release\src\UsbTurnoffTimer.hex"
 
-find_package(Python
-    COMPONENTS Interpreter
-)
+# find_package(Python
+#     COMPONENTS Interpreter
+# )
 
 if (NOT Python_Interpreter_FOUND)
     message(WARNING "No Python interpreter found - programming via stcgal won't be possible.\n"

@@ -14,6 +14,9 @@
 #include <stdint.h>
 
 
+#define xstr(s) str(s)
+#define str(s) #s
+
 #define LED_PIN MAKE_PIN_NAME(LED_PORT_NUMBER, LED_PIN_NUMBER)
 #define NEO_PIXEL_PIN MAKE_PIN_NAME(NEO_PIXEL_PORT_NUMBER, NEO_PIXEL_PIN_NUMBER)
 
@@ -68,10 +71,8 @@ __code ExtendedColor const yellow = {
 };
 
 
-
-
 __code const MorseCodeSymbolIndex morseCodeText[] = {
-    #include "morsecodetext.c"
+    #include MORSE_CODE_TEXT_SOURCE_FILE
 };
 MorseCodeSenderState morseCodeSenderState;
 
